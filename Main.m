@@ -2,8 +2,8 @@
 % Ernesto Bedoy
 % 27 October 2020
 %
-% Reads PolyBench HD-EMG Data
-% Pre-processes  Data
+% Reads TMSi Poly5 HD-sEMG Data
+% Pre-processes Data
 % Applies Spatial Filters 
 % Measures M-wave Amplitude
 % Plots M-wave Time Series, Heat Maps, and Recruitment Curves
@@ -11,8 +11,18 @@
 
 %% Initialization and File Reading
 clear all; close all
-data = TMSiSAGA.Poly5.read('HD_EMG_measurement_Grid1_27-07-2021_12.35.44.poly5');
-load('intensities.mat')
+[file_name, file_path] = uigetfile('*.poly5', 'Select Poly5 recording');
+
+if isequal(file_name,0)
+    error('No Poly5 file selected.');
+end
+
+data = TMSiSAGA.Poly5.read(fullfile(file_path,file_name));
+
+load(fullfile(file_path,'intensities.mat'),'intensities');
+load(fullfile(file_path,'bad_channels.mat'),'bad_chan_mono');
+
+bad_chan_mono = bad_chan_mono(:)';
 
 %% Setup Parameters
 setup.num_trials = 10; % number of trials
@@ -31,7 +41,7 @@ setup.grid_num = ref_chan+1:ref_chan+setup.num_chan; % HD-EMG channel numbers
 %% Create Epochs File 
 % time windows of interest relative to TMS trigger (in seconds)
 epoch.dtPre_tot = -.100; epoch.dtPost_tot = .500; % Total epoch = 100 ms prestim to 500 ms poststim  
-epoch.dtPre_base = -.050; epoch.dtPost_base = -.025; % Baseline epoch = 50 ms prestim to 25 ms poststim
+epoch.dtPre_base = -.050; epoch.dtPost_base = -.025; % Baseline epoch = 50 ms to 25 ms prestim
 epoch.dtPre_blank = -0.002; epoch.dtPost_blank = .005; % Blanking epoch = 2 ms prestim to 5 ms poststim
 epoch.dtPre_Mwave = .005; % M-wave epoch = 5 to 16/30 ms poststim
 prompt = 'Input M-wave end time in milliseconds (options: 16 or 30): '; %input(prompt); % number of trials 
@@ -85,34 +95,36 @@ fcl = 10/(fs/2); % 10 Hz cut off
 [b,a] = butter(1, fcl,'high'); % high pass filter
 filtsig = filtfilt(b,a,x_blank); % filter signal 
 
-%% Zero-Signal Channels Detection
-zero_sig = filtsig(1,:)==0; % finds channels with no signal
-num_zero_sig = sum(zero_sig>0); % count number of channels with no signal
-disp('Number of channels with no signal:'); disp(num_zero_sig)
-bad_chan_mono = find(zero_sig) % monopolar channels
-if num_zero_sig> 0
-    num_chan_pair = setup.num_chan-8;
-    iLong = 1; % initiatlize at first row in longitudinal orientation
-    for iCh = 1:num_chan_pair  % iterate thrugh all channel pairs
-        if rem(iLong, 8) == 0 % check if 8th (last) row has been reached
-            iLong = iLong+1; % skip 8th row because it doesn't have channels to subtract with
+%% Derive Bad Spatially Filtered Channels
+
+bad_chan_D1 = [];
+
+for row = 0:7
+    for col = 1:7
+
+        d1_ch = row*7 + col;
+        mono_ch = row*8 + [col col+1];
+
+        if any(ismember(mono_ch,bad_chan_mono))
+            bad_chan_D1(end+1) = d1_ch;
         end
-        % subtract in longitudinal direction
-        zero_sig_D1(:,iCh) = zero_sig(:,iLong)- zero_sig(:,iLong+1); % filtered EMG
-        iLong = iLong + 1; % increment row in longitudinal direction
+
     end
-    bad_chan_D1 = find(zero_sig_D1) % bipolar channels
-    num_chan_pair = setup.num_chan-16;
-    iLong = 1; % initiatlize at first row in longitudinal orientation
-    for iCh = 1:num_chan_pair  % iterate thrugh all channel pairs
-        if rem(iLong, 7) == 0 % check if 8th (last) row has been reached
-            iLong = iLong+1; % skip 8th row because it doesn't have channels to subtract with
+end
+
+bad_chan_D2 = [];
+
+for row = 0:7
+    for col = 1:6
+
+        d2_ch = row*6 + col;
+        mono_ch = row*8 + [col col+1 col+2];
+
+        if any(ismember(mono_ch,bad_chan_mono))
+            bad_chan_D2(end+1) = d2_ch;
         end
-        % subtract in longitudinal direction
-        zero_sig_D2(:,iCh) = zero_sig_D1(:,iLong)- zero_sig_D1(:,iLong+1); % filtered EMG
-        iLong = iLong + 1; % increment row in longitudinal direction
+
     end
-    bad_chan_D2 = find(zero_sig_D2) % tripolar channels
 end
 
 %% Single Differential Calculation
@@ -146,7 +158,7 @@ for intensity= 1:num_stim_intensities % iterate through all intensity levels
 end
 
 %% Remove Bad Trials
-[bad_trial_mono, good_trials_mono, number_good_mono, Mwave_P2P_Tot, xSwp_tot_Tot2, xSwp_Mwave_Tot2, mono_good_trial_tot] = bad_trials_mono(setup, num_stim_intensities, xSwp_Mwave_Tot, Mwave_P2P, xSwp_tot_Tot);
+[bad_trial_mono, good_trials_mono, number_good_mono, Mwave_P2P_Tot, xSwp_tot_Tot2, xSwp_Mwave_Tot2, mono_good_trial_tot, xSwp_Hreflex_Tot2] = bad_trials_mono(setup, num_stim_intensities, xSwp_Mwave_Tot, Mwave_P2P, xSwp_tot_Tot, xSwp_Hreflex_Tot);
 Filename = sprintf('mono_good_trial_tot'); save(Filename,'mono_good_trial_tot');        
 Filename = sprintf('Mwave_P2P_Tot'); save(Filename,'Mwave_P2P_Tot')
 
@@ -243,14 +255,17 @@ if exist('bad_chan_D2','var')
 end
 
 %% Plot Time Series
+% Monopolar Time Series
 x_lin = [epoch.dtPre_Mwave*1000 epoch.dtPost_Mwave*1000];
-Monopolar_Time_Plot(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2, xSwp_Hreflex_Tot2, tSwp_Tot, xSwp_tot_Tot2,x_lin)
+Monopolar_Time_Series(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2, xSwp_Hreflex_Tot2, tSwp_Tot, xSwp_tot_Tot2,x_lin)
 close all
 
-Single_Diff_Time_Plot(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2_D1, xSwp_Hreflex_Tot2_D1, tSwp_Tot, xSwp_tot_Tot2_D1, x_lin);
+% Bipolar Time Series
+Bipolar_Time_Series(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2_D1, xSwp_Hreflex_Tot2_D1, tSwp_Tot, xSwp_tot_Tot2_D1, x_lin);
 close all
 
-Double_Diff_Time_Plot(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2_D2, xSwp_Hreflex_Tot2_D2, tSwp_Tot, xSwp_tot_Tot2_D2, x_lin);
+% Tripolar Time Series
+Tripolar_Time_Series(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2_D2, xSwp_Hreflex_Tot2_D2, tSwp_Tot, xSwp_tot_Tot2_D2, x_lin);
 close all
 
 %% Plot Heat Maps
@@ -269,7 +284,7 @@ Filename = sprintf('D2_local_max'); save(Filename,'D2_local_max')
 %% Plot Recruitment Curves
 
 first = 1;
-RC_Mwave = RC(D2_local_max, first, intensities, D2_P2P_Tot);
+RC_Mwave = Recruitment_Curves(D2_local_max, first, intensities, D2_P2P_Tot);
 close all
 Filename = sprintf('RC_Mwave'); 
 save(Filename,'RC_Mwave') % save RC max amplitudes
@@ -282,12 +297,12 @@ Filename = sprintf('corr_x_mono'); save(Filename,'corr_x_mono');
 Filename = sprintf('high_corr_mono'); save(Filename,'high_corr_mono');
 
 % Bipolar
-[high_corr_D1, corr_x_D1] = CV_by_trial(setup.num_chan-8, xSwp_Mwave_Tot2_D1, num_stim_intensities);
+[high_corr_D1, corr_x_D1] = Correlation(setup.num_chan-8, xSwp_Mwave_Tot2_D1, num_stim_intensities);
 Filename = sprintf('corr_x_D1'); save(Filename,'corr_x_D1');
 Filename = sprintf('high_corr_D1'); save(Filename,'high_corr_D1');
 
 % Tripolar
-[high_corr_D2, corr_x_D2] = CV_by_trial(setup.num_chan-16, xSwp_Mwave_Tot2_D2, num_stim_intensities);
+[high_corr_D2, corr_x_D2] = Correlation(setup.num_chan-16, xSwp_Mwave_Tot2_D2, num_stim_intensities);
 Filename = sprintf('corr_x_D2'); save(Filename,'corr_x_D2');
 Filename = sprintf('high_corr_D2'); save(Filename,'high_corr_D2');
 
