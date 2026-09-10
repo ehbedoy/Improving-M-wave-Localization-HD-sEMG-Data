@@ -4,7 +4,7 @@
 %
 % Plots Heat Maps of Peak-to-Peak Values
 
-function local_max = Heat_Map(num_chan, intensities, num_stim_intensities, P2P, bad_chan, pulse_num)
+function local_max = Heat_Map(num_chan, intensities, num_stim_intensities, P2P, bad_chan)
 
 %% Get Peak-to-Peak Values
 if ~isempty(bad_chan)
@@ -22,7 +22,7 @@ if ~isempty(bad_chan)
                   %temp2 = 0; temp1 = nan;
                  %temp2 = 0; temp1 = 0;
                     % elseif any(iCh == [42 47])
-                    % temp1 = D2_P2P_Tot{intensity}(iRep,iCh-1); temp2 = temp1;
+                    % temp1 = D2_P2P_Tot{}(iRep,iCh-1); temp2 = temp1;
                     %elseif any(iCh == 48)
                     %temp1 = D2_P2P_Tot{intensity}(iRep,iCh-2); temp2 = temp1;
                 else % remaining columns
@@ -84,9 +84,9 @@ for intensity = 1:num_stim_intensities % iterate through intensities
         saveas(figure1,sprintf('D1_HeatMap%d.fig',intensity));
         saveas(figure1,sprintf('D1_HeatMap%d.svg',intensity));
     elseif num_chan == 48
-            saveas(figure1,sprintf('D2_HeatMap%d.jpg',intensities));
-            saveas(figure1,sprintf('D2_HeatMap%d.fig',intensities));
-            saveas(figure1,sprintf('D2_HeatMap%d.svg',intensities));
+            saveas(figure1,sprintf('D2_HeatMap%d.jpg',intensity));
+            saveas(figure1,sprintf('D2_HeatMap%d.fig',intensity));
+            saveas(figure1,sprintf('D2_HeatMap%d.svg',intensity));
 
     end
     local_max{intensity} = find(imregionalmax(grid)); % Obtain local maximums
