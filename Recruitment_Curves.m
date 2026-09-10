@@ -4,7 +4,7 @@
 %
 % Plots Recruitment Curves 
 
-function max_P2P = RC(local_max, first, intensities,P2P_Tot)
+function max_P2P = RecruitmentCurves(local_max, first, intensities,P2P_Tot)
 
 %% Get unique channels identified as local maximums
 iChan = local_max{first}; 
