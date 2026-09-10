@@ -8,9 +8,7 @@ function [high_corr, corr_x] = Correlation(num_chan, xSwp_Mwave_Tot, num_stim_in
 
 %% Find M-wave correlations 
 for intensity = 1:num_stim_intensities
-    for iCh = 1:num_chan
-        current_x(:,iCh,:) = xSwp_Mwave_Tot{intensity}(:,:,iCh);
-    end
+    current_x = permute(xSwp_Mwave_Tot{intensity}, [1 3 2]);
     for iTrial =1:size(current_x,3)
         corr_x{intensity,iTrial} = corrcoef(current_x(:,:,iTrial)); % correlate channels
         matrix = zeros(num_chan,num_chan); % create empty matrix
