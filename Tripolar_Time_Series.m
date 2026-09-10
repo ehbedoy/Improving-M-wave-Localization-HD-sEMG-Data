@@ -4,7 +4,7 @@
 %
 % Plots Tripolar Times Series  
 
-function Double_Diff_Time_Plot(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2_D2, xSwp_Hreflex_Tot2_D2, tSwp_Tot, xSwp_tot_Tot2_D2, xlin, xlin2, xlin3)
+function Tripolar_Time_Series(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2_D2, xSwp_Hreflex_Tot2_D2, tSwp_Tot, xSwp_tot_Tot2_D2, xlin)
 
 %% Plot M-wave Time Series
 nRows = 8; % number of rows (medial-laterally)
@@ -31,26 +31,7 @@ for intensity = 1:num_stim_intensities % iterate through intensities
             plot(tSwp_Tot*1000, xSwp_tot_Tot2_D2{intensity}(:,:,iCh),'LineWidth',2,'color','k');
             set(gca,'Visible','off'); % remove axis from plot
             xlim([window(1) window(2)]); % limits for x-axis
-            if ~isnan(xlin{intensity,iCh})
-                if iscell(xlin)
-                    xline(xlin{intensity,iCh},'r','linewidth',2);
-                else
-                    xline(xlin,'r','linewidth',2);
-                end
-            else
-                xline(5,'b','linewidth',2)
-            end
-             if ~isnan(xlin2{intensity,iCh})
-                if iscell(xlin2)
-                    xline(xlin2{intensity,iCh},'r','linewidth',2);
-                    xline(xlin3{intensity,iCh},'r','linewidth',2);
-                else
-                    xline(xlin2,'r','linewidth',2);
-                    xline(xlin3,'r','linewidth',2);
-                end
-             else
-                 xline(17,'b','linewidth',2)
-             end
+            xline(x_lin,'r','linewidth',2);
             xPlot = xPlot+1; % iterate along y-axis of grid (proximal-distaly)
             iCh = iCh + 1; % iterate channel to read
         end
