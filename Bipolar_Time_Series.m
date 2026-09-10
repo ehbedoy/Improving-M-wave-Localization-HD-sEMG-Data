@@ -4,7 +4,7 @@
 %
 % Plots Bipolar Times Series
 
-function Single_Diff_Time_Plot(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2_D1, xSwp_Hreflex_Tot2_D1, tSwp_Tot, xSwp_tot_Tot2_D1, x_line)
+function Bipolar_Time_Series(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2_D1, xSwp_Hreflex_Tot2_D1, tSwp_Tot, xSwp_tot_Tot2_D1, x_line)
 
 %% Plot M-wave Time Series
 nRows = 8; % number of rows (medial-laterally)
