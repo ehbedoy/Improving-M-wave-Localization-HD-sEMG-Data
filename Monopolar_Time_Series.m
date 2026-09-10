@@ -4,7 +4,7 @@
 %
 % Plots Monopolar Times Series 
 
-function Monopolar_Time_Plot(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2, xSwp_Hreflex_Tot2, tSwp_Tot, xSwp_tot_Tot2,x_lin)
+function Monopolar_Time_Series(window, intensities, num_stim_intensities, xSwp_Mwave_Tot2, xSwp_Hreflex_Tot2, tSwp_Tot, xSwp_tot_Tot2,x_lin)
 
 %% Plot M-wave Time Series
 nRows = 8; % number of rows (medial-laterally)
